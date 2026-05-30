@@ -5,8 +5,7 @@ Personal Windows development environment dotfiles.
 ## Quick Install
 
 ```powershell
-# One-liner (requires git)
-irm -Headers @{Accept="application/vnd.github.v3.raw"} https://api.github.com/repos/hartkitsak/Terminal-Dotfiles/contents/go.ps1 | iex
+irm https://raw.githubusercontent.com/hartkitsak/Terminal-Dotfiles/master/go.ps1 | iex
 ```
 
 Or clone then install:
