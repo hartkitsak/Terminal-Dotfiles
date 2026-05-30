@@ -1,18 +1,18 @@
-# dotfiles
+# Terminal-Dotfiles
 
 Personal Windows development environment dotfiles.
 
 ## Quick Install
 
 ```powershell
-irm https://raw.githubusercontent.com/hartkitsak/dotfiles/master/go.ps1 | iex
+irm https://raw.githubusercontent.com/hartkitsak/Terminal-Dotfiles/master/go.ps1 | iex
 ```
 
 Or clone then install:
 
 ```powershell
-git clone https://github.com/hartkitsak/dotfiles.git D:\dev-setup\dotfiles
-.\D:\dev-setup\dotfiles\install.ps1
+git clone https://github.com/hartkitsak/Terminal-Dotfiles.git D:\dev-setup\Terminal-Dotfiles
+.\D:\dev-setup\Terminal-Dotfiles\install.ps1
 ```
 
 ## Files
