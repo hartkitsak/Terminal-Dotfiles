@@ -8,9 +8,6 @@ style = "bold #81a1c1"
 
 [os.symbols]
 Windows = "🪟 "
-Linux = "🐧 "
-Ubuntu = "🐧 "
-Debian = "🐧 "
 
 [directory]
 style = "bold #81a1c1"
