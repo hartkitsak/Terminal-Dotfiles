@@ -6,7 +6,7 @@ Personal Windows development environment dotfiles.
 
 ```powershell
 # One-liner (requires git)
-irm https://raw.githubusercontent.com/hartkitsak/Terminal-Dotfiles/main/go.ps1 | iex
+irm https://raw.githubusercontent.com/hartkitsak/Terminal-Dotfiles/master/go.ps1 | iex
 ```
 
 Or clone then install:
