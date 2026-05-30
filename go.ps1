@@ -1,4 +1,4 @@
-$InstallDir = "D:\dotfiles"
+$InstallDir = "D:\dev-setup\dotfiles"
 $RepoUrl    = "https://github.com/hartkitsak/Terminal-Dotfiles.git"
 
 $ErrorActionPreference = "Stop"
