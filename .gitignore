@@ -1,0 +1,6 @@
+# Backup files from install script
+*.bak.*
+
+# OS junk
+Thumbs.db
+.DS_Store
