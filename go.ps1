@@ -1,15 +1,10 @@
-param(
-    [string]$InstallDir = "D:\dotfiles"
-)
-
-$RepoUrl = "https://github.com/hartkitsak/Terminal-Dotfiles.git"
+$InstallDir = "D:\dotfiles"
+$RepoUrl    = "https://github.com/hartkitsak/Terminal-Dotfiles.git"
 
 $ErrorActionPreference = "Stop"
 
-if (Test-Path (Join-Path $PSScriptRoot ".git")) {
-    $repoPath = $PSScriptRoot
-}
-elseif (Test-Path "$InstallDir\.git") {
+# Detect if already cloned
+if (Test-Path "$InstallDir\.git") {
     $repoPath = $InstallDir
 }
 else {
@@ -23,4 +18,4 @@ else {
     $repoPath = $InstallDir
 }
 
-& "$repoPath\install.ps1" @PSBoundParameters
+& "$repoPath\install.ps1"
