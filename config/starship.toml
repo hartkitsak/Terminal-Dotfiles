@@ -7,7 +7,7 @@ disabled = false
 style = "bold #81a1c1"
 
 [os.symbols]
-Windows = "🪟 "
+Windows = "🔰 "
 
 [directory]
 style = "bold #81a1c1"

@@ -64,5 +64,7 @@ if (Get-Command nvim -ErrorAction SilentlyContinue) {
     Set-Alias v nvim
 }
 
-Invoke-Expression (&starship init powershell)
+if (Get-Command starship -ErrorAction SilentlyContinue) {
+    Invoke-Expression (&starship init powershell)
+}
 

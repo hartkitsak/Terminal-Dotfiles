@@ -5,26 +5,32 @@ Personal Windows development environment dotfiles.
 ## Quick Install
 
 ```powershell
-irm https://raw.githubusercontent.com/hartkitsak/Terminal-Dotfiles/master/go.ps1 | iex
+# Install everything (no prompts)
+irm https://raw.githubusercontent.com/hartkitsak/Terminal-Dotfiles/master/install.ps1 | iex
+
+# Uninstall everything (no prompts)
+irm https://raw.githubusercontent.com/hartkitsak/Terminal-Dotfiles/master/uninstall.ps1 | iex
 ```
 
-Or clone then install:
+Or clone then run:
 
 ```powershell
 git clone https://github.com/hartkitsak/Terminal-Dotfiles.git D:\dev-setup\Terminal-Dotfiles
-.\D:\dev-setup\Terminal-Dotfiles\install.ps1
+D:\dev-setup\Terminal-Dotfiles\install.ps1
 ```
 
-## Files
+## Structure
 
-| File | Description |
-|------|-------------|
-| `go.ps1` | Bootstrap — clones repo and runs install |
-| `install.ps1` | Installs configs, tools, fonts |
-| `uninstall.ps1` | Deep clean — removes everything |
-| `Microsoft.PowerShell_profile.ps1` | PowerShell profile with PSReadLine, zoxide, PSFzf, fzf, starship, aliases |
-| `starship.toml` | Starship prompt config (minimal, Tokyo Night theme) |
-| `windows-terminal.settings.json` | Windows Terminal settings (Tokyo Night Storm, JetBrainsMono NF) |
+```
+Terminal-Dotfiles/
+├── install.ps1                # Installs configs, tools, fonts
+├── uninstall.ps1              # Deep clean — removes everything
+├── profile/
+│   └── Microsoft.PowerShell_profile.ps1   # PSReadLine, zoxide, PSFzf, starship, aliases
+└── config/
+    ├── starship.toml                     # Starship prompt (minimal)
+    └── windows-terminal.settings.json    # Terminal config (CaskaydiaCove NFM, no theme)
+```
 
 ## Usage
 
@@ -32,12 +38,8 @@ git clone https://github.com/hartkitsak/Terminal-Dotfiles.git D:\dev-setup\Termi
 # Install everything
 .\install.ps1
 
-# Uninstall everything
+# Uninstall everything (restores .bak.* backups)
 .\uninstall.ps1
-
-# Skip confirmation prompts
-.\install.ps1 -Force
-.\uninstall.ps1 -Force
 
 # Skip specific phases
 .\install.ps1 -SkipConfig -SkipTools
@@ -49,13 +51,13 @@ git clone https://github.com/hartkitsak/Terminal-Dotfiles.git D:\dev-setup\Termi
 1. **Config** — Copies config files to their proper locations (PowerShell profile, starship, Windows Terminal)
 2. **Tools** — Installs fzf, zoxide, ripgrep via winget
 3. **Starship** — Downloads latest starship binary if missing
-4. **Font** — Downloads and installs JetBrainsMono Nerd Font
+4. **Font** — Downloads and installs CaskaydiaCove Nerd Font
 5. **PATH** — Cleans stale PATH entries
 
 ## What uninstall.ps1 does
 
 1. **Config** — Removes config files, restores `.bak.*` backups
 2. **Starship** — Removes starship binaries
-3. **Font** — Removes JetBrainsMono NF fonts (system + user + registry)
+3. **Font** — Removes CaskaydiaCove NF fonts (system + user + registry)
 4. **Tools** — Uninstalls fzf, zoxide, ripgrep via winget
 5. **PATH** — Removes related PATH entries

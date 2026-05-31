@@ -5,8 +5,6 @@
     "copyFormatting": "none",
     "copyOnSelect": false,
     "defaultProfile": "{574e775e-4f2a-5b96-ac1e-a2962a402336}",
-    "initialCols": 120,
-    "initialRows": 30,
     "keybindings": 
     [
         {
@@ -48,12 +46,10 @@
     {
         "defaults": 
         {
-            "colorScheme": "Tokyo Night Storm",
             "cursorShape": "bar",
             "font": 
             {
-                "face": "JetBrainsMono NF",
-                "size": 12
+                "face": "CaskaydiaCove NFM"
             },
             "opacity": 90,
             "useAcrylic": true
@@ -87,31 +83,6 @@
             }
         ]
     },
-    "schemes": 
-    [
-        {
-            "background": "#24283B",
-            "black": "#414868",
-            "blue": "#5E81AC",
-            "brightBlack": "#414868",
-            "brightBlue": "#81A1C1",
-            "brightCyan": "#88C0D0",
-            "brightGreen": "#9ECE6A",
-            "brightPurple": "#BB9AF7",
-            "brightRed": "#F7768E",
-            "brightWhite": "#E5E9F0",
-            "brightYellow": "#E0AF68",
-            "cursorColor": "#E5E9F0",
-            "cyan": "#88C0D0",
-            "foreground": "#E5E9F0",
-            "green": "#9ECE6A",
-            "name": "Tokyo Night Storm",
-            "purple": "#BB9AF7",
-            "red": "#F7768E",
-            "selectionBackground": "#33467C",
-            "white": "#E5E9F0",
-            "yellow": "#E0AF68"
-        }
-    ],
+    "schemes": [],
     "themes": []
 }
