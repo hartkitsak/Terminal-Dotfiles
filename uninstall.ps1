@@ -29,7 +29,7 @@ if (-not $isAdmin) {
 
 # ─── Phase 1: Config files ──────────────────────────────────────────
 if (-not $SkipConfig) {
-    Write-Host "`n=== Phase 1: Remove config files ===" -ForegroundColor Cyan
+    Write-Host "`n[1/5] Config files" -ForegroundColor Cyan
 
     $Configs = @(
         @{ Name = "PowerShell Profile"; Path = $PROFILE }
@@ -72,7 +72,7 @@ if (-not $SkipConfig) {
 
 # ─── Phase 2: Starship (files) ──────────────────────────────────────
 if (-not $SkipStarship) {
-    Write-Host "`n=== Phase 2: Remove starship ===" -ForegroundColor Cyan
+    Write-Host "`n[2/5] Starship" -ForegroundColor Cyan
 
     $starshipDirs = @(
         "$env:USERPROFILE\.starship"
@@ -92,54 +92,54 @@ if (-not $SkipStarship) {
     }
 }
 
-# ─── Phase 3: CaskaydiaCove Nerd Font ──────────────────────────────
+# ─── Phase 3: FiraCode Nerd Font ────────────────────────────────────
 if (-not $SkipFont) {
-    Write-Host "`n=== Phase 3: Remove CaskaydiaCove NF ===" -ForegroundColor Cyan
+    Write-Host "`n[3/5] FiraCode Nerd Font" -ForegroundColor Cyan
 
-    $fontDirs = @(
-        "$env:LOCALAPPDATA\Microsoft\Windows\Fonts"
+    $FontDir = "$env:LOCALAPPDATA\Microsoft\Windows\Fonts"
+    $RegPaths = @(
+        "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts",
+        "Registry::HKEY_CURRENT_USER\Software\Microsoft\Windows NT\CurrentVersion\Fonts"
     )
 
-    $totalRemoved = 0
-    foreach ($dir in $fontDirs) {
+    # Remove registry entries from both HKLM and HKCU
+    $count = 0
+    foreach ($FontReg in $RegPaths) {
         try {
-            $fonts = Get-ChildItem -Path $dir -Filter "CaskaydiaCove*Nerd*" -ErrorAction SilentlyContinue
-            foreach ($f in $fonts) {
-                Remove-Item -Path $f.FullName -Force
-                $totalRemoved++
+            $fontKeys = Get-ItemProperty -Path $FontReg -ErrorAction SilentlyContinue | Get-Member -MemberType NoteProperty | Where-Object { $_.Name -match "^FiraCode" }
+            foreach ($k in $fontKeys) {
+                Remove-ItemProperty -Path $FontReg -Name $k.Name -Force -ErrorAction SilentlyContinue
+                $count++
             }
-        } catch {
-            Write-Host "  [WARN] Error removing fonts from $($dir): $_" -ForegroundColor Yellow
-        }
+        } catch {}
+    }
+    if ($count -gt 0) {
+        Write-Host "  [OK] Removed $count font registry entries" -ForegroundColor Red
+    } else {
+        Write-Host "  [NONE] No FiraCode font registry entries" -ForegroundColor Gray
     }
 
+    # Remove font files
     try {
-        $regFonts = "HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Fonts"
-        $fontKeys = Get-ItemProperty -Path $regFonts -ErrorAction SilentlyContinue |
-            Get-Member -MemberType NoteProperty |
-            Where-Object { $_.Name -like "CaskaydiaCove NF*" }
-        $regCount = 0
-        foreach ($key in $fontKeys) {
-            Remove-ItemProperty -Path $regFonts -Name $key.Name -Force -ErrorAction SilentlyContinue
-            $regCount++
+        $fontFiles = Get-ChildItem -Path $FontDir -Filter "FiraCode*Nerd*" -ErrorAction SilentlyContinue
+        $delCount = 0
+        foreach ($f in $fontFiles) {
+            Remove-Item -Path $f.FullName -Force -ErrorAction SilentlyContinue
+            $delCount++
         }
-        if ($regCount -gt 0) {
-            Write-Host "  [CLEAN] $regCount registry entries removed" -ForegroundColor DarkYellow
+        if ($delCount -gt 0) {
+            Write-Host "  [OK] Removed $delCount font files" -ForegroundColor Red
+        } else {
+            Write-Host "  [NONE] No FiraCode font files found" -ForegroundColor Gray
         }
     } catch {
-        Write-Host "  [WARN] Could not clean font registry: $_" -ForegroundColor Yellow
-    }
-
-    if ($totalRemoved -gt 0) {
-        Write-Host "  [REMOVED] $totalRemoved font files" -ForegroundColor Red
-    } else {
-        Write-Host "  [NONE] CaskaydiaCove NF fonts" -ForegroundColor Gray
+        Write-Host "  [WARN] Font file cleanup: $_" -ForegroundColor Yellow
     }
 }
 
 # ─── Phase 4: Tools (winget) ────────────────────────────────────────
 if (-not $SkipTools) {
-    Write-Host "`n=== Phase 4: Uninstall tools ===" -ForegroundColor Cyan
+    Write-Host "`n[4/5] Tools" -ForegroundColor Cyan
 
     $WingetTools = @(
         @{ Id = "Starship.Starship";         Name = "starship" }
@@ -180,7 +180,7 @@ if (-not $SkipTools) {
 
 # ─── Phase 5: Clean PATH ────────────────────────────────────────────
 if (-not $SkipCleanup) {
-    Write-Host "`n=== Phase 5: Clean PATH ===" -ForegroundColor Cyan
+    Write-Host "`n[5/5] Clean PATH" -ForegroundColor Cyan
 
     $stalePatterns = @(
         "junegunn\.fzf.*Microsoft\.Winget\.Source",

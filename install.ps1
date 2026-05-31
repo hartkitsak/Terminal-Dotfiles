@@ -24,9 +24,160 @@ $DOTFILES = $scriptPath
 
 $BackupSuffix = ".bak.$(Get-Date -Format 'yyyyMMdd_HHmmss')"
 
-# ─── Phase 1: Config ────────────────────────────────────────────────
+# ─── Phase 1: Tools (winget) ────────────────────────────────────────
+if (-not $SkipTools) {
+    Write-Host "`n[1/5] Tools" -ForegroundColor Cyan
+
+    $WingetTools = @(
+        @{ Id = "junegunn.fzf";              Name = "fzf" }
+        @{ Id = "ajeetdsouza.zoxide";        Name = "zoxide" }
+        @{ Id = "BurntSushi.ripgrep.MSVC";   Name = "ripgrep" }
+    )
+
+    foreach ($t in $WingetTools) {
+        $toolPath = Get-Command $t.Name -ErrorAction SilentlyContinue
+        if ($toolPath) {
+            Write-Host "  [ALREADY] $($t.Name)" -ForegroundColor Green
+            continue
+        }
+        Write-Host "  [INSTALL] $($t.Name)..." -ForegroundColor Magenta
+        try {
+            winget install --id $t.Id --silent --accept-package-agreements --accept-source-agreements | Out-Null
+            Write-Host "  [OK] $($t.Name)" -ForegroundColor Green
+        } catch {
+            Write-Host "  [FAIL] $($t.Name): $_" -ForegroundColor Red
+        }
+    }
+}
+
+# ─── Phase 2: Starship (manual) ─────────────────────────────────────
+if (-not $SkipStarship) {
+    Write-Host "`n[2/5] Starship" -ForegroundColor Cyan
+
+    $starshipBin = Get-Command starship -ErrorAction SilentlyContinue
+    if ($starshipBin) {
+        Write-Host "  [ALREADY] starship ($($starshipBin.Source))" -ForegroundColor Green
+    }
+    else {
+        Write-Host "  [DOWNLOAD] starship..." -ForegroundColor Magenta
+        $starshipDir = "$env:USERPROFILE\.starship"
+        $binDir = "$starshipDir\bin"
+        $zipPath = "$env:TEMP\starship.zip"
+        try {
+            $latest = Invoke-RestMethod -Uri "https://api.github.com/repos/starship/starship/releases/latest" -Headers @{ "User-Agent" = "powershell" }
+            $asset = $latest.assets | Where-Object { $_.name -like "*x86_64-pc-windows-msvc*" -and $_.name -like "*.zip" } | Select-Object -First 1
+            if (-not $asset) { throw "No .zip asset found for x86_64" }
+            Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $zipPath
+            New-Item -ItemType Directory -Path $binDir -Force | Out-Null
+            Expand-Archive -Path $zipPath -DestinationPath $binDir -Force
+            Remove-Item $zipPath -Force
+            Write-Host "  [OK] starship -> $binDir" -ForegroundColor Green
+            $userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
+            if ($userPath -notlike "*$binDir*") {
+                [Environment]::SetEnvironmentVariable("PATH", "$userPath;$binDir", "User")
+                $env:PATH = "$env:PATH;$binDir"
+                Write-Host "  [PATH] Added $binDir to PATH" -ForegroundColor Green
+            }
+        } catch {
+            Write-Host "  [FAIL] starship download: $_" -ForegroundColor Red
+        }
+    }
+}
+
+# ─── Phase 3: FiraCode Nerd Font ─────────────────────────────────────
+if (-not $SkipFont) {
+    Write-Host "`n[3/5] FiraCode Nerd Font" -ForegroundColor Cyan
+
+    $FontDir = "$env:LOCALAPPDATA\Microsoft\Windows\Fonts"
+    $HklmReg = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"
+    $HkcuReg = "Registry::HKEY_CURRENT_USER\Software\Microsoft\Windows NT\CurrentVersion\Fonts"
+    $Zipped = "$env:TEMP\FiraCode.zip"
+    $ExtractDir = "$env:TEMP\FiraCode-NF"
+
+    try {
+        New-Item -ItemType Directory -Path $FontDir -Force | Out-Null
+        New-Item -ItemType Directory -Path $ExtractDir -Force | Out-Null
+
+        Invoke-WebRequest -Uri "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/FiraCode.zip" -OutFile $Zipped -ErrorAction Stop
+        Expand-Archive -Path $Zipped -DestinationPath $ExtractDir -Force
+        Remove-Item $Zipped -Force
+
+        $WeightMap = @{
+            "Light"    = "Light"
+            "Regular"  = "Regular"
+            "Medium"   = "Med"
+            "Retina"   = "Ret"
+            "SemiBold" = "SemBd"
+            "Bold"     = "Bold"
+        }
+
+        $ttfFiles = Get-ChildItem -Path $ExtractDir -Filter "*.ttf" | Where-Object { $_.Name -match "^FiraCode.*Nerd" }
+        $count = 0; $regCount = 0
+
+        foreach ($f in $ttfFiles) {
+            $baseName = [System.IO.Path]::GetFileNameWithoutExtension($f.Name)
+            if ($baseName -match "^FiraCodeNerdFont(Mono|Propo)?-(.+)$") {
+                $variant = $matches[1]
+                $weight = $matches[2]
+                $win32Face = if ($WeightMap.ContainsKey($weight)) { $WeightMap[$weight] } else { $weight }
+                $family = if ($variant) { "FiraCode Nerd Font $variant" } else { "FiraCode Nerd Font" }
+                $key = "$family $win32Face (TrueType)"
+            } else {
+                continue
+            }
+
+            $targetPath = Join-Path $FontDir $f.Name
+            Copy-Item -Path $f.FullName -Destination $targetPath -Force
+            $count++
+
+            $reg = $HkcuReg
+            try {
+                $existing = Get-ItemProperty -Path $reg -Name $key -ErrorAction SilentlyContinue
+                if (-not $existing) {
+                    New-ItemProperty -Path $reg -Name $key -PropertyType String -Value $targetPath -Force -ErrorAction Stop | Out-Null
+                }
+                $regCount++
+            } catch {
+                Write-Host "  [WARN] Could not register font: $key" -ForegroundColor Yellow
+            }
+        }
+
+        # Clean old HKLM entries (from previous admin installs)
+        try {
+            $hklmKeys = Get-ItemProperty -Path $HklmReg -ErrorAction SilentlyContinue | Get-Member -MemberType NoteProperty | Where-Object { $_.Name -match "^FiraCode" }
+            foreach ($k in $hklmKeys) { Remove-ItemProperty -Path $HklmReg -Name $k.Name -Force -ErrorAction SilentlyContinue }
+        } catch {}
+
+        Remove-Item -Path $ExtractDir -Recurse -Force
+
+        try {
+            Add-Type @"
+                using System;
+                using System.Runtime.InteropServices;
+                public static class FontNotify {
+                    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+                    public static extern IntPtr SendMessageTimeout(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam, uint fuFlags, uint uTimeout, out IntPtr lpdwResult);
+                    public static void Notify() {
+                        const uint WM_FONTCHANGE = 0x001D;
+                        const uint SMTO_ABORTIFHUNG = 0x0002;
+                        IntPtr result;
+                        SendMessageTimeout((IntPtr)0xFFFF, WM_FONTCHANGE, IntPtr.Zero, IntPtr.Zero, SMTO_ABORTIFHUNG, 5000, out result);
+                    }
+                }
+"@
+            [FontNotify]::Notify()
+        } catch {
+            Write-Host "  [WARN] Font cache not refreshed (reboot may be needed)" -ForegroundColor Yellow
+        }
+        Write-Host "  [OK] $count font files copied, $regCount registry entries written" -ForegroundColor Green
+    } catch {
+        Write-Host "  [FAIL] Font install: $_" -ForegroundColor Red
+    }
+}
+
+# ─── Phase 4: Config ────────────────────────────────────────────────
 if (-not $SkipConfig) {
-    Write-Host "`n=== Phase 1: Config files ===" -ForegroundColor Cyan
+    Write-Host "`n[4/5] Config files" -ForegroundColor Cyan
 
     $Configs = @(
         @{ Name = "PowerShell Profile"; Source = Join-Path $DOTFILES "profile\Microsoft.PowerShell_profile.ps1"; Dest = $PROFILE }
@@ -63,134 +214,9 @@ if (-not $SkipConfig) {
     }
 }
 
-# ─── Phase 2: Tools (winget) ────────────────────────────────────────
-if (-not $SkipTools) {
-    Write-Host "`n=== Phase 2: Tools ===" -ForegroundColor Cyan
-
-    $WingetTools = @(
-        @{ Id = "junegunn.fzf";              Name = "fzf" }
-        @{ Id = "ajeetdsouza.zoxide";        Name = "zoxide" }
-        @{ Id = "BurntSushi.ripgrep.MSVC";   Name = "ripgrep" }
-    )
-
-    foreach ($t in $WingetTools) {
-        $toolPath = Get-Command $t.Name -ErrorAction SilentlyContinue
-        if ($toolPath) {
-            Write-Host "  [ALREADY] $($t.Name)" -ForegroundColor Green
-            continue
-        }
-        Write-Host "  [INSTALL] $($t.Name)..." -ForegroundColor Magenta
-        try {
-            winget install --id $t.Id --silent --accept-package-agreements --accept-source-agreements | Out-Null
-            Write-Host "  [OK] $($t.Name)" -ForegroundColor Green
-        } catch {
-            Write-Host "  [FAIL] $($t.Name): $_" -ForegroundColor Red
-        }
-    }
-}
-
-# ─── Phase 3: Starship (manual) ─────────────────────────────────────
-if (-not $SkipStarship) {
-    Write-Host "`n=== Phase 3: Starship ===" -ForegroundColor Cyan
-
-    $starshipBin = Get-Command starship -ErrorAction SilentlyContinue
-    if ($starshipBin) {
-        Write-Host "  [ALREADY] starship ($($starshipBin.Source))" -ForegroundColor Green
-    }
-    else {
-        Write-Host "  [DOWNLOAD] starship..." -ForegroundColor Magenta
-        $starshipDir = "$env:USERPROFILE\.starship"
-        $binDir = "$starshipDir\bin"
-        $zipPath = "$env:TEMP\starship.zip"
-        try {
-            $latest = Invoke-RestMethod -Uri "https://api.github.com/repos/starship/starship/releases/latest" -Headers @{ "User-Agent" = "powershell" }
-            $asset = $latest.assets | Where-Object { $_.name -like "*x86_64-pc-windows-msvc*" -and $_.name -like "*.zip" } | Select-Object -First 1
-            if (-not $asset) { throw "No .zip asset found for x86_64" }
-            Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $zipPath
-            New-Item -ItemType Directory -Path $binDir -Force | Out-Null
-            Expand-Archive -Path $zipPath -DestinationPath $binDir -Force
-            Remove-Item $zipPath -Force
-            Write-Host "  [OK] starship -> $binDir" -ForegroundColor Green
-            $userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
-            if ($userPath -notlike "*$binDir*") {
-                [Environment]::SetEnvironmentVariable("PATH", "$userPath;$binDir", "User")
-                $env:PATH = "$env:PATH;$binDir"
-                Write-Host "  [PATH] Added $binDir to PATH" -ForegroundColor Green
-            }
-        } catch {
-            Write-Host "  [FAIL] starship download: $_" -ForegroundColor Red
-        }
-    }
-}
-
-# ─── Phase 4: CaskaydiaCove Nerd Font ──────────────────────────────
-if (-not $SkipFont) {
-    Write-Host "`n=== Phase 4: CaskaydiaCove Nerd Font ===" -ForegroundColor Cyan
-
-    $fontTarget = "$env:LOCALAPPDATA\Microsoft\Windows\Fonts"
-    $installedFonts = Get-ChildItem -Path $fontTarget -Filter "CaskaydiaCoveNerdFont*" -ErrorAction SilentlyContinue
-
-    if ($installedFonts.Count -gt 0) {
-        Write-Host "  [ALREADY] CaskaydiaCove NF ($($installedFonts.Count) files)" -ForegroundColor Green
-    }
-    else {
-        Write-Host "  [DOWNLOAD] CaskaydiaCove Nerd Font..." -ForegroundColor Magenta
-        $zipPath = "$env:TEMP\CascadiaCode.zip"
-        $extractPath = "$env:TEMP\CascadiaCodeNF"
-        try {
-            Invoke-WebRequest -Uri "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/CascadiaCode.zip" -OutFile $zipPath
-            New-Item -ItemType Directory -Path $extractPath -Force | Out-Null
-            Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
-            New-Item -ItemType Directory -Path $fontTarget -Force | Out-Null
-            $ttfs = Get-ChildItem -Path $extractPath -Filter "*.ttf"
-            $fontCount = 0
-            foreach ($f in $ttfs) {
-                $dest = Join-Path $fontTarget $f.Name
-                Copy-Item -Path $f.FullName -Destination $dest -Force
-                $suffix = $f.BaseName -replace '^CaskaydiaCoveNerdFont', ''
-                if ($suffix -match '^Mono') {
-                    $familyBase = 'CaskaydiaCove NFM'
-                    $rest = $suffix.Substring(4)
-                } elseif ($suffix -match '^Propo') {
-                    $familyBase = 'CaskaydiaCove NFP'
-                    $rest = $suffix.Substring(5)
-                } else {
-                    $familyBase = 'CaskaydiaCove NF'
-                    $rest = $suffix
-                }
-                $rest = $rest.TrimStart('-')
-                $weights = @('ExtraLight','Light','SemiLight','SemiBold')
-                $foundWeight = $null
-                foreach ($w in $weights) {
-                    if ($rest -match "^$w(.*)") {
-                        $foundWeight = $w
-                        $rest = $Matches[1]
-                        break
-                    }
-                }
-                if ($foundWeight) { $familyBase = "$familyBase $foundWeight" }
-                if ([string]::IsNullOrEmpty($rest)) {
-                    $face = 'Regular'
-                } else {
-                    $face = [regex]::Replace($rest, '([a-z])([A-Z])', '$1 $2')
-                }
-                $regFonts = "HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Fonts"
-                $regName = "$familyBase $face (TrueType)"
-                Set-ItemProperty -Path $regFonts -Name $regName -Value $dest -Force
-                $fontCount++
-            }
-            Remove-Item $zipPath -Force
-            Remove-Item $extractPath -Recurse -Force
-            Write-Host "  [OK] $fontCount font files installed" -ForegroundColor Green
-        } catch {
-            Write-Host "  [FAIL] CaskaydiaCove NF download: $_" -ForegroundColor Red
-        }
-    }
-}
-
 # ─── Phase 5: Clean stale PATH entries ──────────────────────────────
 if (-not $SkipCleanup) {
-    Write-Host "`n=== Phase 5: Clean PATH ===" -ForegroundColor Cyan
+    Write-Host "`n[5/5] Clean PATH" -ForegroundColor Cyan
 
     try {
         $envReg = "Registry::HKEY_CURRENT_USER\Environment"
