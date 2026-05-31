@@ -147,9 +147,36 @@ if (-not $SkipFont) {
             foreach ($f in $ttfs) {
                 $dest = Join-Path $fontTarget $f.Name
                 Copy-Item -Path $f.FullName -Destination $dest -Force
+                $suffix = $f.BaseName -replace '^CaskaydiaCoveNerdFont', ''
+                if ($suffix -match '^Mono') {
+                    $familyBase = 'CaskaydiaCove NFM'
+                    $rest = $suffix.Substring(4)
+                } elseif ($suffix -match '^Propo') {
+                    $familyBase = 'CaskaydiaCove NFP'
+                    $rest = $suffix.Substring(5)
+                } else {
+                    $familyBase = 'CaskaydiaCove NF'
+                    $rest = $suffix
+                }
+                $rest = $rest.TrimStart('-')
+                $weights = @('ExtraLight','Light','SemiLight','SemiBold')
+                $foundWeight = $null
+                foreach ($w in $weights) {
+                    if ($rest -match "^$w(.*)") {
+                        $foundWeight = $w
+                        $rest = $Matches[1]
+                        break
+                    }
+                }
+                if ($foundWeight) { $familyBase = "$familyBase $foundWeight" }
+                if ([string]::IsNullOrEmpty($rest)) {
+                    $face = 'Regular'
+                } else {
+                    $face = [regex]::Replace($rest, '([a-z])([A-Z])', '$1 $2')
+                }
                 $regFonts = "HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Fonts"
-                $regName = "$($f.BaseName) (TrueType)"
-                Set-ItemProperty -Path $regFonts -Name $regName -Value $f.Name -Force
+                $regName = "$familyBase $face (TrueType)"
+                Set-ItemProperty -Path $regFonts -Name $regName -Value $dest -Force
                 $fontCount++
             }
             Remove-Item $zipPath -Force

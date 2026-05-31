@@ -117,7 +117,7 @@ if (-not $SkipFont) {
         $regFonts = "HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Fonts"
         $fontKeys = Get-ItemProperty -Path $regFonts -ErrorAction SilentlyContinue |
             Get-Member -MemberType NoteProperty |
-            Where-Object { $_.Name -like "*CaskaydiaCove*Nerd*" }
+            Where-Object { $_.Name -like "CaskaydiaCove NF*" }
         $regCount = 0
         foreach ($key in $fontKeys) {
             Remove-ItemProperty -Path $regFonts -Name $key.Name -Force -ErrorAction SilentlyContinue
