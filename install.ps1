@@ -91,87 +91,95 @@ if (-not $SkipFont) {
     $FontDir = "$env:LOCALAPPDATA\Microsoft\Windows\Fonts"
     $HklmReg = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"
     $HkcuReg = "Registry::HKEY_CURRENT_USER\Software\Microsoft\Windows NT\CurrentVersion\Fonts"
-    $Zipped = "$env:TEMP\FiraCode.zip"
-    $ExtractDir = "$env:TEMP\FiraCode-NF"
 
-    try {
-        New-Item -ItemType Directory -Path $FontDir -Force | Out-Null
-        New-Item -ItemType Directory -Path $ExtractDir -Force | Out-Null
+    $WeightMap = @{
+        "Light"    = "Light"
+        "Regular"  = "Regular"
+        "Medium"   = "Med"
+        "Retina"   = "Ret"
+        "SemiBold" = "SemBd"
+        "Bold"     = "Bold"
+    }
 
-        Invoke-WebRequest -Uri "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/FiraCode.zip" -OutFile $Zipped -ErrorAction Stop
-        Expand-Archive -Path $Zipped -DestinationPath $ExtractDir -Force
-        Remove-Item $Zipped -Force
+    # Check if font is already registered in HKCU
+    $existingReg = Get-ItemProperty -Path $HkcuReg -ErrorAction SilentlyContinue | Get-Member -MemberType NoteProperty | Where-Object { $_.Name -match "^FiraCode" }
+    if ($existingReg.Count -ge 18) {
+        Write-Host "  [ALREADY] FiraCode Nerd Font ($($existingReg.Count) entries)" -ForegroundColor Green
+    } else {
+        $Zipped = "$env:TEMP\FiraCode.zip"
+        $ExtractDir = "$env:TEMP\FiraCode-NF"
 
-        $WeightMap = @{
-            "Light"    = "Light"
-            "Regular"  = "Regular"
-            "Medium"   = "Med"
-            "Retina"   = "Ret"
-            "SemiBold" = "SemBd"
-            "Bold"     = "Bold"
-        }
+        try {
+            New-Item -ItemType Directory -Path $FontDir -Force | Out-Null
+            New-Item -ItemType Directory -Path $ExtractDir -Force | Out-Null
 
-        $ttfFiles = Get-ChildItem -Path $ExtractDir -Filter "*.ttf" | Where-Object { $_.Name -match "^FiraCode.*Nerd" }
-        $count = 0; $regCount = 0
+            Invoke-WebRequest -Uri "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/FiraCode.zip" -OutFile $Zipped -ErrorAction Stop
+            Expand-Archive -Path $Zipped -DestinationPath $ExtractDir -Force
+            Remove-Item $Zipped -Force
 
-        foreach ($f in $ttfFiles) {
-            $baseName = [System.IO.Path]::GetFileNameWithoutExtension($f.Name)
-            if ($baseName -match "^FiraCodeNerdFont(Mono|Propo)?-(.+)$") {
-                $variant = $matches[1]
-                $weight = $matches[2]
-                $win32Face = if ($WeightMap.ContainsKey($weight)) { $WeightMap[$weight] } else { $weight }
-                $family = if ($variant) { "FiraCode Nerd Font $variant" } else { "FiraCode Nerd Font" }
-                $key = "$family $win32Face (TrueType)"
-            } else {
-                continue
-            }
+            $ttfFiles = Get-ChildItem -Path $ExtractDir -Filter "*.ttf" | Where-Object { $_.Name -match "^FiraCode.*Nerd" }
+            $count = 0; $regCount = 0
 
-            $targetPath = Join-Path $FontDir $f.Name
-            Copy-Item -Path $f.FullName -Destination $targetPath -Force
-            $count++
-
-            $reg = $HkcuReg
-            try {
-                $existing = Get-ItemProperty -Path $reg -Name $key -ErrorAction SilentlyContinue
-                if (-not $existing) {
-                    New-ItemProperty -Path $reg -Name $key -PropertyType String -Value $targetPath -Force -ErrorAction Stop | Out-Null
+            foreach ($f in $ttfFiles) {
+                $baseName = [System.IO.Path]::GetFileNameWithoutExtension($f.Name)
+                if ($baseName -match "^FiraCodeNerdFont(Mono|Propo)?-(.+)$") {
+                    $variant = $matches[1]
+                    $weight = $matches[2]
+                    $win32Face = if ($WeightMap.ContainsKey($weight)) { $WeightMap[$weight] } else { $weight }
+                    $family = if ($variant) { "FiraCode Nerd Font $variant" } else { "FiraCode Nerd Font" }
+                    $key = "$family $win32Face (TrueType)"
+                } else {
+                    continue
                 }
-                $regCount++
-            } catch {
-                Write-Host "  [WARN] Could not register font: $key" -ForegroundColor Yellow
-            }
-        }
 
-        # Clean old HKLM entries (from previous admin installs)
-        try {
-            $hklmKeys = Get-ItemProperty -Path $HklmReg -ErrorAction SilentlyContinue | Get-Member -MemberType NoteProperty | Where-Object { $_.Name -match "^FiraCode" }
-            foreach ($k in $hklmKeys) { Remove-ItemProperty -Path $HklmReg -Name $k.Name -Force -ErrorAction SilentlyContinue }
-        } catch {}
+                $targetPath = Join-Path $FontDir $f.Name
+                if (-not (Test-Path $targetPath)) {
+                    Copy-Item -Path $f.FullName -Destination $targetPath -Force
+                }
+                $count++
 
-        Remove-Item -Path $ExtractDir -Recurse -Force
-
-        try {
-            Add-Type @"
-                using System;
-                using System.Runtime.InteropServices;
-                public static class FontNotify {
-                    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-                    public static extern IntPtr SendMessageTimeout(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam, uint fuFlags, uint uTimeout, out IntPtr lpdwResult);
-                    public static void Notify() {
-                        const uint WM_FONTCHANGE = 0x001D;
-                        const uint SMTO_ABORTIFHUNG = 0x0002;
-                        IntPtr result;
-                        SendMessageTimeout((IntPtr)0xFFFF, WM_FONTCHANGE, IntPtr.Zero, IntPtr.Zero, SMTO_ABORTIFHUNG, 5000, out result);
+                try {
+                    $existing = Get-ItemProperty -Path $HkcuReg -Name $key -ErrorAction SilentlyContinue
+                    if (-not $existing) {
+                        New-ItemProperty -Path $HkcuReg -Name $key -PropertyType String -Value $targetPath -Force -ErrorAction Stop | Out-Null
                     }
+                    $regCount++
+                } catch {
+                    Write-Host "  [WARN] Could not register font: $key" -ForegroundColor Yellow
                 }
+            }
+
+            # Clean old HKLM entries (from previous admin installs)
+            try {
+                $hklmKeys = Get-ItemProperty -Path $HklmReg -ErrorAction SilentlyContinue | Get-Member -MemberType NoteProperty | Where-Object { $_.Name -match "^FiraCode" }
+                foreach ($k in $hklmKeys) { Remove-ItemProperty -Path $HklmReg -Name $k.Name -Force -ErrorAction SilentlyContinue }
+            } catch {}
+
+            Remove-Item -Path $ExtractDir -Recurse -Force
+
+            try {
+                Add-Type @"
+                    using System;
+                    using System.Runtime.InteropServices;
+                    public static class FontNotify {
+                        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+                        public static extern IntPtr SendMessageTimeout(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam, uint fuFlags, uint uTimeout, out IntPtr lpdwResult);
+                        public static void Notify() {
+                            const uint WM_FONTCHANGE = 0x001D;
+                            const uint SMTO_ABORTIFHUNG = 0x0002;
+                            IntPtr result;
+                            SendMessageTimeout((IntPtr)0xFFFF, WM_FONTCHANGE, IntPtr.Zero, IntPtr.Zero, SMTO_ABORTIFHUNG, 5000, out result);
+                        }
+                    }
 "@
-            [FontNotify]::Notify()
+                [FontNotify]::Notify()
+            } catch {
+                Write-Host "  [WARN] Font cache not refreshed (reboot may be needed)" -ForegroundColor Yellow
+            }
+            Write-Host "  [OK] $count font files copied, $regCount registry entries written" -ForegroundColor Green
         } catch {
-            Write-Host "  [WARN] Font cache not refreshed (reboot may be needed)" -ForegroundColor Yellow
+            Write-Host "  [FAIL] Font install: $_" -ForegroundColor Red
         }
-        Write-Host "  [OK] $count font files copied, $regCount registry entries written" -ForegroundColor Green
-    } catch {
-        Write-Host "  [FAIL] Font install: $_" -ForegroundColor Red
     }
 }
 
