@@ -17,20 +17,20 @@ One-command setup that installs and configures a modern Windows dev environment:
 
 ## Installation
 
-### Remote
+Run directly from GitHub — no clone required.
 
 ```powershell
 irm https://raw.githubusercontent.com/hartkitsak/nova/master/install.ps1 | iex
 ```
 
-### Local
+Or clone and run locally:
 
 ```powershell
 git clone https://github.com/hartkitsak/nova.git
 .\nova\install.ps1
 ```
 
-> **Uninstall:** `irm .../uninstall.ps1 \| iex` (remote) or `.\nova\uninstall.ps1` (local)
+> **Uninstall:** `irm .../uninstall.ps1 \| iex` (direct) or `.\nova\uninstall.ps1` (local)
 
 ## What's Included
 
