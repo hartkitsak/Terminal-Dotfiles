@@ -46,12 +46,9 @@
     {
         "defaults": 
         {
-            "colorScheme": "Catppuccin Mocha",
-            "cursorShape": "bar",
             "font": 
             {
                 "face": "FiraCode Nerd Font Mono",
-                "size": 12
             },
             "opacity": 90,
             "useAcrylic": true
@@ -85,31 +82,6 @@
             }
         ]
     },
-    "schemes": 
-    [
-        {
-            "background": "#1e1e2e",
-            "black": "#45475a",
-            "blue": "#89b4fa",
-            "brightBlack": "#585b70",
-            "brightBlue": "#89b4fa",
-            "brightCyan": "#94e2d5",
-            "brightGreen": "#a6e3a1",
-            "brightPurple": "#cba6f7",
-            "brightRed": "#f38ba8",
-            "brightWhite": "#cdd6f4",
-            "brightYellow": "#f9e2af",
-            "cursorColor": "#f5e0dc",
-            "cyan": "#94e2d5",
-            "foreground": "#cdd6f4",
-            "green": "#a6e3a1",
-            "name": "Catppuccin Mocha",
-            "purple": "#cba6f7",
-            "red": "#f38ba8",
-            "selectionBackground": "#313244",
-            "white": "#bac2de",
-            "yellow": "#f9e2af"
-        }
-    ],
+    "schemes": [],
     "themes": []
 }

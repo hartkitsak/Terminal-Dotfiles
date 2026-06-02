@@ -3,25 +3,6 @@ if ($Host.Name -eq "ConsoleHost" -and $Host.UI.SupportsVirtualTerminal) {
         Set-PSReadLineOption -PredictionSource History -ErrorAction SilentlyContinue
         Set-PSReadLineOption -PredictionViewStyle ListView -ErrorAction SilentlyContinue
         Set-PSReadLineOption -EditMode Windows -ErrorAction SilentlyContinue
-        Set-PSReadLineOption -Colors @{
-            Command            = "#cba6f7"
-            Parameter          = "#89b4fa"
-            Operator           = "#fab387"
-            String             = "#a6e3a1"
-            Number             = "#fab387"
-            Variable           = "#f5c2e7"
-            Member             = "#89dceb"
-            Keyword            = "#cba6f7"
-            Type               = "#b4befe"
-            Comment            = "#585b70"
-            ContinuationPrompt = "#6c7086"
-            Emphasis           = "#f38ba8"
-            Error              = "#f38ba8"
-            Selection          = "#313244"
-            InlinePrediction   = "#6c7086"
-            ListPrediction     = "#6c7086"
-            ListPredictionSelected = "#313244"
-        } -ErrorAction SilentlyContinue
     }
 }
 
@@ -79,4 +60,3 @@ if (Get-Command nvim -ErrorAction SilentlyContinue) {
 if (Get-Command starship -ErrorAction SilentlyContinue) {
     Invoke-Expression (&starship init powershell)
 }
-

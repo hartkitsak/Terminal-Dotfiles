@@ -4,27 +4,23 @@ format = "$directory$os$git_branch$git_status$character"
 
 [os]
 disabled = false
-style = "bold #89b4fa"
 
 [os.symbols]
 Windows = "🔰 "
 
 [directory]
-style = "bold #cba6f7"
 truncation_length = 3
 truncate_to_repo = false
 read_only = " [ro]"
 
 [git_branch]
 symbol = ""
-format = "[$symbol$branch]($style)"
-style = "bold #a6e3a1"
+format = "[$symbol$branch]"
 
 [git_status]
-format = "[$all_status$ahead_behind]($style)"
-style = "bold #fab387"
+format = "[$all_status$ahead_behind]"
 
 [character]
-success_symbol = "[❯](bold #89b4fa)"
-error_symbol = "[❯](bold #f38ba8)"
-vimcmd_symbol = "[❮](bold #89b4fa)"
+success_symbol = "[❯](bold)"
+error_symbol = "[❯](bold)"
+vimcmd_symbol = "[❮](bold)"
