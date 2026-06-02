@@ -8,13 +8,13 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$repoUrl = "https://github.com/hartkitsak/Terminal-Dotfiles.git"
+$repoUrl = "https://github.com/hartkitsak/nova.git"
 $scriptPath = try { Split-Path -Parent $PSCommandPath -ErrorAction Stop } catch { $null }
 
 # Auto-clone when piped via irm | iex (no local files)
 if (-not $scriptPath -or -not (Test-Path (Join-Path $scriptPath "profile\Microsoft.PowerShell_profile.ps1"))) {
     if (-not (Get-Command git -ErrorAction SilentlyContinue)) { throw "Git is required. Install it first: winget install Git.Git" }
-    $cloneDir = Join-Path $env:TEMP "Terminal-Dotfiles"
+    $cloneDir = Join-Path $env:TEMP "nova"
     Write-Host "=== Cloning repo to $cloneDir ===" -ForegroundColor Cyan
     if (Test-Path "$cloneDir\.git") { git -C $cloneDir pull } else { git clone $repoUrl $cloneDir }
     & "$cloneDir\install.ps1" @PSBoundParameters

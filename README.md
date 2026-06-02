@@ -1,51 +1,50 @@
-# Terminal-Dotfiles
+<div align="center">
 
-Personal Windows development environment dotfiles — Catppuccin Mocha theme, FiraCode Nerd Font Mono, starship prompt, CLI tools.
+# ⚡ nova
 
-## Quick Install
+**Windows dev environment · PowerShell profile · CLI toolkit**
+
+[![PowerShell](https://img.shields.io/badge/PowerShell-5391FE?style=flat&logo=powershell&logoColor=white)]()
+[![Windows Terminal](https://img.shields.io/badge/Windows%20Terminal-4D4D4D?style=flat&logo=windowsterminal&logoColor=white)]()
+
+</div>
+
+## Features
+
+- **PowerShell profile** — PSReadLine prediction (history + list), zoxide, PSFzf (Ctrl+t / Ctrl+r), custom functions (`ff`, `cdf`, `take`, `..`, `...`) and aliases (`ll`, `gs`, `gco`, `gcmsg`, `v`)
+- **Starship prompt** — minimal, fast, single-line format
+- **Windows Terminal** — FiraCode Nerd Font Mono 12pt, 90% opacity, acrylic
+- **FiraCode Nerd Font** — auto-installed per-user (no admin required)
+- **One-command setup** — `irm` + `iex` or clone & run
+
+## Quick Start
 
 ```powershell
-# Install everything (no prompts, auto-clones from TEMP)
-irm https://raw.githubusercontent.com/hartkitsak/Terminal-Dotfiles/master/install.ps1 | iex
+# Remote — no clone needed
+irm https://raw.githubusercontent.com/hartkitsak/nova/master/install.ps1 | iex
 
-# Uninstall everything (no prompts)
-irm https://raw.githubusercontent.com/hartkitsak/Terminal-Dotfiles/master/uninstall.ps1 | iex
+# Uninstall
+irm https://raw.githubusercontent.com/hartkitsak/nova/master/uninstall.ps1 | iex
 ```
 
-Or clone and run locally:
-
 ```powershell
-git clone https://github.com/hartkitsak/Terminal-Dotfiles.git
-.\install.ps1
+# Local
+git clone https://github.com/hartkitsak/nova.git
+.\nova\install.ps1
 ```
 
 ## Structure
 
 ```
-Terminal-Dotfiles/
-├── install.ps1                  # Installs tools → starship → font → config → path
-├── uninstall.ps1                # Removes config → starship → font → tools → path
+nova/
+├── install.ps1                     # 5-phase setup
+├── uninstall.ps1                   # 5-phase teardown
 ├── profile/
-│   └── Microsoft.PowerShell_profile.ps1   # PSReadLine (Catppuccin Mocha), zoxide, PSFzf, starship
-└── config/
-    ├── starship.toml                      # Starship prompt (Catppuccin Mocha — blue/mauve/green/peach)
-    └── windows-terminal.settings.json     # Terminal config (FiraCode NF Mono 12pt, Catppuccin Mocha scheme)
-```
-
-## Usage
-
-```powershell
-# Install everything
-.\install.ps1
-
-# Skip specific phases
-.\install.ps1 -SkipTools -SkipStarship -SkipFont -SkipConfig -SkipCleanup
-
-# Uninstall everything (restores .bak.* backups)
-.\uninstall.ps1
-
-# Skip specific uninstall phases
-.\uninstall.ps1 -SkipStarship -SkipFont -SkipTools -SkipConfig -SkipCleanup
+│   └── Microsoft.PowerShell_profile.ps1
+├── config/
+│   ├── starship.toml
+│   └── windows-terminal.settings.json
+└── .gitignore
 ```
 
 ## What install.ps1 does
@@ -54,8 +53,8 @@ Terminal-Dotfiles/
 |---|-------|-------------|
 | 1 | **Tools** | Installs `fzf`, `zoxide`, `ripgrep` via winget (no prompts) |
 | 2 | **Starship** | Downloads latest starship binary to `~/.starship/bin`, adds to User PATH |
-| 3 | **FiraCode Nerd Font** | Downloads 18 TTF files, extracts to `%LOCALAPPDATA%\Microsoft\Windows\Fonts`, registers per-user via HKCU registry, broadcasts font change notification |
-| 4 | **Config** | Copies PowerShell profile, starship.toml, and Windows Terminal settings.json (backs up existing with `.bak.timestamp`) |
+| 3 | **FiraCode Nerd Font** | Downloads 18 TTF files, extracts to `%LOCALAPPDATA%\Microsoft\Windows\Fonts`, registers per-user via HKCU, cleans stale HKLM entries, broadcasts font change notification |
+| 4 | **Config** | Copies PowerShell profile, starship.toml, and Windows Terminal settings.json (skips if MD5 matches, backs up existing as `.bak.<timestamp>`) |
 | 5 | **Clean PATH** | Removes stale winget source entries from User PATH |
 
 All phases are wrapped in try/catch — one failure won't abort the script.
@@ -67,13 +66,25 @@ All phases are wrapped in try/catch — one failure won't abort the script.
 | 1 | **Config** | Removes config files, restores latest `.bak.*` backup |
 | 2 | **Starship** | Removes `~/.starship` directory |
 | 3 | **FiraCode Nerd Font** | Removes font registry entries (HKLM + HKCU), deletes font files |
-| 4 | **Tools** | Uninstalls fzf, zoxide, ripgrep via winget (auto-retries with admin elevation if needed) |
-| 5 | **Clean PATH** | Removes related PATH entries from User and Machine PATH |
+| 4 | **Tools** | Uninstalls starship, fzf, zoxide, ripgrep via winget (auto-retries with admin elevation if needed) |
+| 5 | **Clean PATH** | Cleans related PATH entries from both User and Machine PATH |
 
-## Theme
+Skips phases that would fail without admin — warns instead of blocking.
 
-- **Terminal colors**: Catppuccin Mocha — background `#1e1e2e`, foreground `#cdd6f4`, all 16 ANSI colors
-- **Starship prompt**: `directory` (mauve `#cba6f7`), `git_branch` (green `#a6e3a1`), `git_status` (peach `#fab387`), prompt character (blue `#89b4fa`)
-- **PSReadLine**: Catppuccin Mocha palette across 17 color keys (command, parameter, operator, string, number, variable, member, keyword, type, comment, etc.)
-- **Terminal font**: FiraCode Nerd Font Mono, 12pt
-- **All profiles** use Catppuccin Mocha scheme (set in `profiles.defaults`)
+## Aliases & Functions
+
+| Alias | Maps to |
+|-------|---------|
+| `ll` | `Get-ChildItem` |
+| `gs` | `git` |
+| `gco` | `git checkout` |
+| `gcmsg` | `git commit -m` |
+| `v` | `nvim` |
+
+| Function | Description |
+|----------|-------------|
+| `ff` | Fuzzy find files via ripgrep + fzf |
+| `cdf` | Fuzzy `cd` into subdirectories |
+| `..` | Go up one directory |
+| `...` | Go up two directories |
+| `take <dir>` | Create and `cd` into a directory |
