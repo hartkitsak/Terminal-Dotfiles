@@ -127,15 +127,24 @@ if (-not $SkipFont) {
             }
 
             $targetPath = Join-Path $FontDir $f.Name
-            Copy-Item -Path $f.FullName -Destination $targetPath -Force
-            $count++
+            $alreadyInstalled = (Test-Path $targetPath) -and ((Get-ItemProperty -Path $HkcuReg -Name $key -ErrorAction SilentlyContinue) -or (Get-ItemProperty -Path $HklmReg -Name $key -ErrorAction SilentlyContinue))
 
-            $reg = $HkcuReg
+            if ($alreadyInstalled) {
+                Write-Host "  [SAME]  $($f.Name)" -ForegroundColor Green
+                $count++; $regCount++
+                continue
+            }
+
             try {
-                $existing = Get-ItemProperty -Path $reg -Name $key -ErrorAction SilentlyContinue
-                if (-not $existing) {
-                    New-ItemProperty -Path $reg -Name $key -PropertyType String -Value $targetPath -Force -ErrorAction Stop | Out-Null
-                }
+                Copy-Item -Path $f.FullName -Destination $targetPath -Force
+                $count++
+            } catch {
+                Write-Host "  [SKIP]  $($f.Name) (in use)" -ForegroundColor Yellow
+                continue
+            }
+
+            try {
+                New-ItemProperty -Path $HkcuReg -Name $key -PropertyType String -Value $targetPath -Force -ErrorAction Stop | Out-Null
                 $regCount++
             } catch {
                 Write-Host "  [WARN] Could not register font: $key" -ForegroundColor Yellow
