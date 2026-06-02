@@ -9,86 +9,84 @@
 
 </div>
 
-## Features
+---
 
-- **PowerShell profile** — PSReadLine prediction (history + list), zoxide, PSFzf (Ctrl+t / Ctrl+r), custom functions (`ff`, `cdf`, `take`, `..`, `...`) and aliases (`ll`, `gs`, `gco`, `gcmsg`, `v`)
-- **Starship prompt** — minimal, fast, single-line format
-- **Windows Terminal** — FiraCode Nerd Font Mono 12pt, 90% opacity, acrylic
-- **FiraCode Nerd Font** — auto-installed per-user (no admin required)
-- **One-command setup** — `irm` + `iex` or clone & run
+## Overview
+
+One-command setup that installs and configures a modern Windows dev environment: PowerShell profile with zoxide + PSFzf, Starship prompt, FiraCode Nerd Font, Windows Terminal settings, and CLI tools (fzf, zoxide, ripgrep). No admin required for most operations.
 
 ## Installation
 
+### Remote
+
 ```powershell
-# Install (remote — no clone needed)
 irm https://raw.githubusercontent.com/hartkitsak/nova/master/install.ps1 | iex
 ```
 
-```powershell
-# Uninstall (remote)
-irm https://raw.githubusercontent.com/hartkitsak/nova/master/uninstall.ps1 | iex
-```
+### Local
 
 ```powershell
-# Install (local)
 git clone https://github.com/hartkitsak/nova.git
 .\nova\install.ps1
 ```
 
-```powershell
-# Uninstall (local)
-.\nova\uninstall.ps1
-```
+> **Uninstall:** `irm .../uninstall.ps1 \| iex` (remote) or `.\nova\uninstall.ps1` (local)
 
-### install.ps1
+## What's Included
 
-`install.ps1` is a 5-phase setup script. Each phase is independent and wrapped in try/catch — one failure won't stop the rest. Use `-SkipTools`, `-SkipStarship`, `-SkipFont`, `-SkipConfig`, or `-SkipCleanup` to skip specific phases.
+| Component | Description |
+|-----------|-------------|
+| **PowerShell Profile** | PSReadLine prediction, zoxide, PSFzf (Ctrl+t / Ctrl+r), custom functions + aliases |
+| **Starship Prompt** | Minimal single-line prompt |
+| **Windows Terminal** | FiraCode Nerd Font Mono 12pt, 90% opacity, acrylic |
+| **FiraCode Nerd Font** | 18 TTF files, per-user install via HKCU, no admin required |
+| **CLI Tools** | fzf, zoxide, ripgrep (installed via winget) |
 
-#### Phase 1 — Tools
+## install.ps1
 
-Installs CLI tools via winget (silent, no prompts):
+5 independent phases, wrapped in try/catch. Use `-SkipTools`, `-SkipStarship`, `-SkipFont`, `-SkipConfig`, or `-SkipCleanup` to skip specific phases.
 
-| Tool | winget ID |
-|------|-----------|
-| **fzf** | `junegunn.fzf` |
-| **zoxide** | `ajeetdsouza.zoxide` |
-| **ripgrep** | `BurntSushi.ripgrep.MSVC` |
+| # | Phase | Description |
+|---|-------|-------------|
+| 1 | **Tools** | winget install fzf, zoxide, ripgrep (silent, skips if on PATH) |
+| 2 | **Starship** | Download latest binary → `~/.starship/bin` → add to User PATH |
+| 3 | **FiraCode Nerd Font** | Download release → extract 18 TTF → copy to LocalState → register HKCU → clean stale HKLM → broadcast font change |
+| 4 | **Config** | Copy profile, starship.toml, terminal settings (MD5 skip if identical, backs up as `.bak.<timestamp>`) |
+| 5 | **Clean PATH** | Remove stale winget source entries from User PATH |
 
-Skips if the tool is already on `PATH`.
+## uninstall.ps1
 
-#### Phase 2 — Starship
+5 phases, admin-aware (warns instead of blocking). Use `-SkipConfig`, `-SkipStarship`, `-SkipFont`, `-SkipTools`, or `-SkipCleanup`.
 
-Downloads the latest `starship` binary from GitHub Releases to `~/.starship/bin/` and adds it to User PATH. Skips if `starship` is already on `PATH`.
+| # | Phase | Description |
+|---|-------|-------------|
+| 1 | **Config** | Remove installed files → restore latest `.bak.*` backup |
+| 2 | **Starship** | Delete `~/.starship/` directory |
+| 3 | **FiraCode Nerd Font** | Remove registry entries (HKLM + HKCU) → delete font files |
+| 4 | **Tools** | winget uninstall fzf, zoxide, ripgrep, starship (auto-retry with admin elevation if needed) |
+| 5 | **Clean PATH** | Clean User + Machine PATH of stale entries |
 
-#### Phase 3 — FiraCode Nerd Font
+## Aliases
 
-Downloads the latest FiraCode Nerd Font release (18 TTF files) to a temp directory, then copies them to `%LOCALAPPDATA%\Microsoft\Windows\Fonts\`. For each font:
+| Alias | Maps to |
+|-------|---------|
+| `ll` | `Get-ChildItem` |
+| `gs` | `git` |
+| `gco` | `git checkout` |
+| `gcmsg` | `git commit -m` |
+| `v` | `nvim` |
 
-- If the file + registry key already exist → **skips** (`[SAME]`)
-- If the file is in use by another process → **skips gracefully** (`[SKIP]`)
-- Registers the font per-user via HKCU registry
-- Cleans any stale HKLM font entries from previous admin installs
-- Broadcasts a `WM_FONTCHANGE` notification so applications pick up new fonts immediately
+## Functions
 
-No admin required — all operations are per-user.
+| Function | Description |
+|----------|-------------|
+| `ff` | Fuzzy find files via ripgrep + fzf |
+| `cdf` | Fuzzy `cd` into subdirectories |
+| `..` | Go up one directory |
+| `...` | Go up two directories |
+| `take <dir>` | Create and `cd` into a directory |
 
-#### Phase 4 — Config
-
-Copies configuration files to their target locations:
-
-| File | Source | Destination |
-|------|--------|-------------|
-| PowerShell Profile | `profile\Microsoft.PowerShell_profile.ps1` | `$PROFILE` |
-| Starship | `config\starship.toml` | `~\.config\starship.toml` |
-| Windows Terminal | `config\windows-terminal.settings.json` | Windows Terminal LocalState |
-
-Before overwriting, compares MD5 hashes — if the destination is identical, the file is skipped. Existing files are backed up with a `.bak.<timestamp>` suffix.
-
-#### Phase 5 — Clean PATH
-
-Scans the User PATH for stale winget source entries (from previous uninstall/upgrade cycles of fzf and zoxide) and removes them.
-
-## Structure
+## Project Structure
 
 ```
 nova/
@@ -101,54 +99,3 @@ nova/
 │   └── windows-terminal.settings.json
 └── .gitignore
 ```
-
-### uninstall.ps1
-
-`uninstall.ps1` is a 5-phase teardown script. Use `-SkipConfig`, `-SkipStarship`, `-SkipFont`, `-SkipTools`, or `-SkipCleanup` to skip specific phases. If not running as Administrator, a warning is shown — some operations may be skipped.
-
-#### Phase 1 — Config
-
-Removes the installed config files, then searches for `.bak.<timestamp>` backups and restores the most recent one.
-
-#### Phase 2 — Starship
-
-Deletes the entire `~/.starship/` directory.
-
-#### Phase 3 — FiraCode Nerd Font
-
-Removes all FiraCode Nerd Font registry entries from both HKLM and HKCU, then deletes matching font files from `%LOCALAPPDATA%\Microsoft\Windows\Fonts\`.
-
-#### Phase 4 — Tools
-
-Uninstalls tools via winget:
-
-| Tool | winget ID |
-|------|-----------|
-| **starship** | `Starship.Starship` |
-| **fzf** | `junegunn.fzf` |
-| **zoxide** | `ajeetdsouza.zoxide` |
-| **ripgrep** | `BurntSushi.ripgrep.MSVC` |
-
-If winget uninstall succeeds but the tool is still listed, it retries with an admin elevation prompt (via `RunAs`).
-
-#### Phase 5 — Clean PATH
-
-Removes stale PATH entries matching `starship`, `fzf`, or `zoxide` winget paths from both User and Machine PATH.
-
-## Aliases & Functions
-
-| Alias | Maps to |
-|-------|---------|
-| `ll` | `Get-ChildItem` |
-| `gs` | `git` |
-| `gco` | `git checkout` |
-| `gcmsg` | `git commit -m` |
-| `v` | `nvim` |
-
-| Function | Description |
-|----------|-------------|
-| `ff` | Fuzzy find files via ripgrep + fzf |
-| `cdf` | Fuzzy `cd` into subdirectories |
-| `..` | Go up one directory |
-| `...` | Go up two directories |
-| `take <dir>` | Create and `cd` into a directory |
