@@ -17,7 +17,7 @@
 - **FiraCode Nerd Font** — auto-installed per-user (no admin required)
 - **One-command setup** — `irm` + `iex` or clone & run
 
-## Quick Start
+## Installation
 
 ```powershell
 # Install (remote — no clone needed)
