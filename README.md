@@ -22,7 +22,9 @@
 ```powershell
 # Install (remote — no clone needed)
 irm https://raw.githubusercontent.com/hartkitsak/nova/master/install.ps1 | iex
+```
 
+```powershell
 # Uninstall (remote)
 irm https://raw.githubusercontent.com/hartkitsak/nova/master/uninstall.ps1 | iex
 ```
@@ -31,7 +33,9 @@ irm https://raw.githubusercontent.com/hartkitsak/nova/master/uninstall.ps1 | iex
 # Install (local)
 git clone https://github.com/hartkitsak/nova.git
 .\nova\install.ps1
+```
 
+```powershell
 # Uninstall (local)
 .\nova\uninstall.ps1
 ```
