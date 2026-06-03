@@ -60,3 +60,16 @@ if (Get-Command nvim -ErrorAction SilentlyContinue) {
 if (Get-Command starship -ErrorAction SilentlyContinue) {
     Invoke-Expression (&starship init powershell)
 }
+
+# HksUtil — Windows Optimizer Tool
+$hksUtilPaths = @(
+    "$env:USERPROFILE\dev\HksUtil\app.ps1",
+    "D:\dev-setup\HksUtil\app.ps1",
+    "$env:USERPROFILE\HksUtil\hksutil.ps1"
+)
+foreach ($p in $hksUtilPaths) {
+    if (Test-Path $p) {
+        Set-Alias hksutil $p
+        break
+    }
+}
