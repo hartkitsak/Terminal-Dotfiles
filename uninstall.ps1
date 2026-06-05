@@ -21,10 +21,20 @@ if (-not $scriptPath -or -not (Test-Path (Join-Path $scriptPath "profile\Microso
     return
 }
 
-# Admin check (winget uninstall needs admin)
+# Self-elevate to admin (winget uninstall / PATH / fonts need admin)
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
-    Write-Host "  [WARN] Not running as Administrator. Some operations may fail." -ForegroundColor Yellow
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = "pwsh.exe"
+    $argList = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
+    foreach ($kv in $PSBoundParameters.GetEnumerator()) {
+        if ($kv.Value -is [switch] -and $kv.Value) { $argList += " -$($kv.Key)" }
+    }
+    $psi.Arguments = $argList
+    $psi.Verb = "RunAs"
+    $psi.UseShellExecute = $true
+    $null = [System.Diagnostics.Process]::Start($psi)
+    exit
 }
 
 # ─── Phase 1: Config files ──────────────────────────────────────────

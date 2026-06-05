@@ -22,6 +22,22 @@ if (-not $scriptPath -or -not (Test-Path (Join-Path $scriptPath "profile\Microso
 }
 $DOTFILES = $scriptPath
 
+# Self-elevate to admin
+$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $isAdmin) {
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = "pwsh.exe"
+    $argList = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
+    foreach ($kv in $PSBoundParameters.GetEnumerator()) {
+        if ($kv.Value -is [switch] -and $kv.Value) { $argList += " -$($kv.Key)" }
+    }
+    $psi.Arguments = $argList
+    $psi.Verb = "RunAs"
+    $psi.UseShellExecute = $true
+    $null = [System.Diagnostics.Process]::Start($psi)
+    exit
+}
+
 $BackupSuffix = ".bak.$(Get-Date -Format 'yyyyMMdd_HHmmss')"
 
 # ─── Phase 1: Tools (winget) ────────────────────────────────────────

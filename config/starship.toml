@@ -15,10 +15,10 @@ read_only = " [ro]"
 
 [git_branch]
 symbol = ""
-format = "[$symbol$branch]"
+format = "$symbol$branch"
 
 [git_status]
-format = "[$all_status$ahead_behind]"
+format = "$all_status$ahead_behind"
 
 [character]
 success_symbol = "[❯](bold)"
