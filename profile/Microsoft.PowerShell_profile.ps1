@@ -7,7 +7,10 @@ if ($Host.Name -eq "ConsoleHost" -and $Host.UI.SupportsVirtualTerminal) {
 }
 
 if (Get-Command zoxide -ErrorAction SilentlyContinue) {
-    Invoke-Expression (& { (zoxide init powershell | Out-String) })
+    $zoxidePath = (Get-Command zoxide).Source
+    $zoxideItem = Get-Item $zoxidePath -Force -ErrorAction SilentlyContinue
+    if ($zoxideItem.LinkType) { $zoxidePath = $zoxideItem.Target }
+    Invoke-Expression (& { (& $zoxidePath init powershell | Out-String) })
 }
 
 if (Get-Module -ListAvailable -Name PSFzf) {
@@ -18,11 +21,22 @@ if (Get-Module -ListAvailable -Name PSFzf) {
 $env:FZF_DEFAULT_OPTS = "--height=40% --layout=reverse --border --inline-info"
 
 function ff {
-    rg --files | fzf
+    $rgPath = (Get-Command rg -ErrorAction SilentlyContinue).Source
+    $fzfPath = (Get-Command fzf -ErrorAction SilentlyContinue).Source
+    if (-not $rgPath -or -not $fzfPath) { return }
+    $rgItem = Get-Item $rgPath -Force -ErrorAction SilentlyContinue
+    if ($rgItem.LinkType) { $rgPath = $rgItem.Target }
+    $fzfItem = Get-Item $fzfPath -Force -ErrorAction SilentlyContinue
+    if ($fzfItem.LinkType) { $fzfPath = $fzfItem.Target }
+    & $rgPath --files | & $fzfPath
 }
 
 function cdf {
-    Set-Location (Get-ChildItem -Directory -Recurse -ErrorAction SilentlyContinue | ForEach-Object FullName | fzf)
+    $fzfPath = (Get-Command fzf -ErrorAction SilentlyContinue).Source
+    if (-not $fzfPath) { return }
+    $fzfItem = Get-Item $fzfPath -Force -ErrorAction SilentlyContinue
+    if ($fzfItem.LinkType) { $fzfPath = $fzfItem.Target }
+    Set-Location (Get-ChildItem -Directory -Recurse -ErrorAction SilentlyContinue | ForEach-Object FullName | & $fzfPath)
 }
 
 function .. {
