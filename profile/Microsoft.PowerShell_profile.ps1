@@ -63,9 +63,9 @@ function la {
     Get-ChildItem -Force @args
 }
 Set-Alias gs git
-Set-Alias ga git add
-Set-Alias gp git push
-Set-Alias gst git status
+function ga { git add @args }
+function gp { git push @args }
+function gst { git status @args }
 
 function gco {
     git checkout @Args
