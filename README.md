@@ -71,17 +71,21 @@ git clone https://github.com/hartkitsak/nova.git
 | Alias | Maps to |
 |-------|---------|
 | `ll` | `Get-ChildItem` |
-| `gs` | `git` |
+| `la` | `Get-ChildItem -Force` (show hidden) |
+| `gs` | `git status` |
+| `ga` | `git add` |
+| `gp` | `git push` |
 | `gco` | `git checkout` |
 | `gcmsg` | `git commit -m` |
+| `gl` | `git log --oneline --graph --decorate` |
 | `v` | `nvim` |
 
 ## Functions
 
 | Function | Description |
 |----------|-------------|
-| `ff` | Fuzzy find files via ripgrep + fzf |
-| `cdf` | Fuzzy `cd` into subdirectories |
+| `ff` | Fuzzy find files via ripgrep + fzf (includes hidden, skips `.git`) |
+| `cdf` | Fuzzy `cd` into subdirectories (max depth 4) |
 | `..` | Go up one directory |
 | `...` | Go up two directories |
 | `take <dir>` | Create and `cd` into a directory |

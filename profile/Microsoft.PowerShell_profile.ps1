@@ -1,3 +1,12 @@
+function Resolve-CommandPath {
+    param([string]$Name)
+    $path = (Get-Command $Name -ErrorAction SilentlyContinue).Source
+    if (-not $path) { return $null }
+    $item = Get-Item $path -Force -ErrorAction SilentlyContinue
+    if ($item.LinkType) { return $item.Target }
+    return $path
+}
+
 if ($Host.Name -eq "ConsoleHost" -and $Host.UI.SupportsVirtualTerminal) {
     if (Get-Module -ListAvailable -Name PSReadLine) {
         Set-PSReadLineOption -PredictionSource History -ErrorAction SilentlyContinue
@@ -6,10 +15,8 @@ if ($Host.Name -eq "ConsoleHost" -and $Host.UI.SupportsVirtualTerminal) {
     }
 }
 
-if (Get-Command zoxide -ErrorAction SilentlyContinue) {
-    $zoxidePath = (Get-Command zoxide).Source
-    $zoxideItem = Get-Item $zoxidePath -Force -ErrorAction SilentlyContinue
-    if ($zoxideItem.LinkType) { $zoxidePath = $zoxideItem.Target }
+$zoxidePath = Resolve-CommandPath zoxide
+if ($zoxidePath) {
     Invoke-Expression (& { (& $zoxidePath init powershell | Out-String) })
 }
 
@@ -21,22 +28,16 @@ if (Get-Module -ListAvailable -Name PSFzf) {
 $env:FZF_DEFAULT_OPTS = "--height=40% --layout=reverse --border --inline-info"
 
 function ff {
-    $rgPath = (Get-Command rg -ErrorAction SilentlyContinue).Source
-    $fzfPath = (Get-Command fzf -ErrorAction SilentlyContinue).Source
+    $rgPath = Resolve-CommandPath rg
+    $fzfPath = Resolve-CommandPath fzf
     if (-not $rgPath -or -not $fzfPath) { return }
-    $rgItem = Get-Item $rgPath -Force -ErrorAction SilentlyContinue
-    if ($rgItem.LinkType) { $rgPath = $rgItem.Target }
-    $fzfItem = Get-Item $fzfPath -Force -ErrorAction SilentlyContinue
-    if ($fzfItem.LinkType) { $fzfPath = $fzfItem.Target }
-    & $rgPath --files | & $fzfPath
+    & $rgPath --files --hidden --glob '!.git' | & $fzfPath
 }
 
 function cdf {
-    $fzfPath = (Get-Command fzf -ErrorAction SilentlyContinue).Source
+    $fzfPath = Resolve-CommandPath fzf
     if (-not $fzfPath) { return }
-    $fzfItem = Get-Item $fzfPath -Force -ErrorAction SilentlyContinue
-    if ($fzfItem.LinkType) { $fzfPath = $fzfItem.Target }
-    Set-Location (Get-ChildItem -Directory -Recurse -ErrorAction SilentlyContinue | ForEach-Object FullName | & $fzfPath)
+    Set-Location (Get-ChildItem -Directory -Recurse -Depth 4 -ErrorAction SilentlyContinue | ForEach-Object FullName | & $fzfPath)
 }
 
 function .. {
@@ -58,7 +59,14 @@ function take {
 }
 
 Set-Alias ll Get-ChildItem
+function la {
+    Get-ChildItem -Force @args
+}
 Set-Alias gs git
+Set-Alias ga git add
+Set-Alias gp git push
+Set-Alias gst git status
+
 function gco {
     git checkout @Args
 }
@@ -67,23 +75,14 @@ function gcmsg {
     git commit -m $Args
 }
 
+function gl {
+    git log --oneline --graph --decorate @Args
+}
+
 if (Get-Command nvim -ErrorAction SilentlyContinue) {
     Set-Alias v nvim
 }
 
 if (Get-Command starship -ErrorAction SilentlyContinue) {
     Invoke-Expression (&starship init powershell)
-}
-
-# HksUtil — Windows Optimizer Tool
-$hksUtilPaths = @(
-    "$env:USERPROFILE\dev\HksUtil\app.ps1",
-    "D:\dev-setup\HksUtil\app.ps1",
-    "$env:USERPROFILE\HksUtil\hksutil.ps1"
-)
-foreach ($p in $hksUtilPaths) {
-    if (Test-Path $p) {
-        Set-Alias hksutil $p
-        break
-    }
 }
