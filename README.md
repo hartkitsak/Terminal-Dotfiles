@@ -72,9 +72,10 @@ git clone https://github.com/hartkitsak/nova.git
 |-------|---------|
 | `ll` | `Get-ChildItem` |
 | `la` | `Get-ChildItem -Force` (show hidden) |
-| `gs` | `git status` |
+| `gs` | `git` |
 | `ga` | `git add` |
 | `gp` | `git push` |
+| `gst` | `git status` |
 | `gco` | `git checkout` |
 | `gcmsg` | `git commit -m` |
 | `gl` | `git log --oneline --graph --decorate` |
